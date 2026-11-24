@@ -59,19 +59,15 @@ function selectFile(file) {
 
 input.addEventListener("change", () => selectFile(input.files[0]));
 
-["dragenter", "dragover"].forEach((eventName) => {
-  uploadArea.addEventListener(eventName, (event) => {
-    event.preventDefault();
-    uploadArea.classList.add("drag");
-  });
-});
+["dragenter", "dragover"].forEach((name) => uploadArea.addEventListener(name, (event) => {
+  event.preventDefault();
+  uploadArea.classList.add("drag");
+}));
 
-["dragleave", "drop"].forEach((eventName) => {
-  uploadArea.addEventListener(eventName, (event) => {
-    event.preventDefault();
-    uploadArea.classList.remove("drag");
-  });
-});
+["dragleave", "drop"].forEach((name) => uploadArea.addEventListener(name, (event) => {
+  event.preventDefault();
+  uploadArea.classList.remove("drag");
+}));
 
 uploadArea.addEventListener("drop", (event) => {
   selectFile(event.dataTransfer.files[0]);
@@ -151,6 +147,47 @@ async function loadFiles() {
   });
 }
 
+function uploadWithProgress(file, path, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const encodedPath = path.split("/").map(encodeURIComponent).join("/");
+    const url = `${SUPABASE_URL}/storage/v1/object/uploads/${encodedPath}`;
+
+    xhr.open("POST", url);
+    xhr.setRequestHeader("apikey", SUPABASE_KEY);
+    xhr.setRequestHeader("Authorization", `Bearer ${SUPABASE_KEY}`);
+    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    xhr.setRequestHeader("Cache-Control", "31536000");
+    xhr.setRequestHeader("x-upsert", "false");
+
+    xhr.upload.addEventListener("progress", (event) => {
+      if (!event.lengthComputable) return;
+      const percent = Math.max(1, Math.min(99, Math.floor((event.loaded / event.total) * 100)));
+      onProgress(percent, event.loaded, event.total);
+    });
+
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress(100, file.size, file.size);
+        resolve();
+        return;
+      }
+
+      let detail = xhr.responseText;
+      try {
+        const body = JSON.parse(xhr.responseText);
+        detail = body.message || body.error || body.error_description || detail;
+      } catch {}
+
+      reject(new Error(detail || `Erro HTTP ${xhr.status}`));
+    });
+
+    xhr.addEventListener("error", () => reject(new Error("Falha de rede durante o envio. Verifique sua conexão.")));
+    xhr.addEventListener("abort", () => reject(new Error("Envio cancelado.")));
+    xhr.send(file);
+  });
+}
+
 uploadButton.addEventListener("click", async () => {
   if (!selectedFile) return;
 
@@ -163,26 +200,25 @@ uploadButton.addEventListener("click", async () => {
 
   uploadButton.disabled = true;
   $("#progressWrap").hidden = false;
-  $("#progressBar").style.width = "5%";
-  $("#progressText").textContent = "Enviando...";
+  $("#progressBar").style.width = "0%";
+  $("#progressText").textContent = `0% · ${formatSize(selectedFile.size)}`;
 
   const id = crypto.randomUUID();
   const path = `${id}/${safeName(selectedFile.name)}`;
 
-  const { error } = await sb.storage.from("uploads").upload(path, selectedFile, {
-    cacheControl: "31536000",
-    upsert: false,
-    contentType: selectedFile.type || "application/octet-stream"
-  });
-
-  if (error) {
+  try {
+    await uploadWithProgress(selectedFile, path, (percent, loaded, total) => {
+      $("#progressBar").style.width = `${percent}%`;
+      $("#progressText").textContent = `${percent}% · ${formatSize(loaded)} / ${formatSize(total)}`;
+    });
+  } catch (error) {
     $("#progressWrap").hidden = true;
     uploadButton.disabled = false;
 
     let message = error.message;
-    if (/bucket.*not found|not found/i.test(message)) {
+    if (/bucket.*not found|bucket not found/i.test(message)) {
       message = "Bucket uploads não encontrado. Execute banco.sql no Supabase.";
-    } else if (/row-level security|not authorized|policy/i.test(message)) {
+    } else if (/row-level security|not authorized|policy|permission/i.test(message)) {
       message = "Permissão negada. Execute banco.sql no Supabase.";
     }
 
@@ -191,9 +227,6 @@ uploadButton.addEventListener("click", async () => {
   }
 
   const url = sb.storage.from("uploads").getPublicUrl(path).data.publicUrl;
-
-  $("#progressBar").style.width = "100%";
-  $("#progressText").textContent = "100%";
 
   const { error: databaseError } = await sb.from("upload_files").insert({
     id,
@@ -208,6 +241,9 @@ uploadButton.addEventListener("click", async () => {
   $("#openButton").href = url;
   $("#result").hidden = false;
 
+  $("#progressBar").style.width = "100%";
+  $("#progressText").textContent = "100% · Concluído";
+
   if (databaseError) {
     toast("Arquivo enviado, mas o banco não foi configurado: " + databaseError.message, true);
   } else {
@@ -215,7 +251,7 @@ uploadButton.addEventListener("click", async () => {
   }
 
   await loadFiles();
-  setTimeout(() => $("#progressWrap").hidden = true, 700);
+  setTimeout(() => $("#progressWrap").hidden = true, 1200);
   uploadButton.disabled = false;
 });
 
