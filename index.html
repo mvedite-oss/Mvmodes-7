@@ -3,19 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>MV Upload — Compartilhe arquivos</title>
+  <title>MV Upload</title>
   <meta name="theme-color" content="#09090f">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header>
     <a class="brand" href="#/"><span>MV</span> UPLOAD</a>
-    <button id="adminButton" class="button small">⚙ ADM</button>
+    <button id="adminButton" class="button small" type="button">ADM</button>
   </header>
 
   <main>
     <section class="hero">
-      <div class="glow"></div>
       <p class="eyebrow">ARMAZENAMENTO RÁPIDO</p>
       <h1>Envie. <span>Compartilhe.</span></h1>
       <p class="subtitle">Selecione um arquivo e receba um link permanente.</p>
@@ -25,31 +24,25 @@
         <label for="fileInput">
           <div class="upload-icon">⬆</div>
           <strong>Escolher arquivo</strong>
-          <small>Sem limite definido pelo site</small>
+          <small>Arraste o arquivo aqui</small>
         </label>
       </div>
 
-      <button id="uploadButton" class="button primary" disabled>Enviar arquivo</button>
+      <button id="uploadButton" class="button primary" type="button" disabled>Enviar arquivo</button>
 
       <div id="progressWrap" class="progress-wrap" hidden>
         <div class="progress"><div id="progressBar"></div></div>
-        <span id="progressText">0%</span>
+        <span id="progressText">Preparando...</span>
       </div>
 
       <div id="result" class="result" hidden>
-        <p>Arquivo enviado com sucesso</p>
+        <p>Arquivo enviado</p>
         <div class="link-row">
           <input id="linkOutput" readonly>
-          <button id="copyButton" class="button primary">Copiar</button>
+          <button id="copyButton" class="button primary" type="button">Copiar</button>
         </div>
         <a id="openButton" class="button" target="_blank" rel="noopener">Abrir arquivo</a>
       </div>
-    </section>
-
-    <section class="info-grid">
-      <article><b>♾️</b><h2>Sem expiração</h2><p>Os links continuam disponíveis.</p></article>
-      <article><b>🔗</b><h2>Link direto</h2><p>Copie e envie para qualquer pessoa.</p></article>
-      <article><b>⚡</b><h2>Banco de dados</h2><p>Os dados dos arquivos ficam registrados.</p></article>
     </section>
 
     <section id="filesSection" class="files-section" hidden>
@@ -63,11 +56,11 @@
 
   <dialog id="adminDialog">
     <form method="dialog">
-      <button class="close" value="cancel">×</button>
+      <button class="close" value="cancel" type="submit">×</button>
       <p class="eyebrow">ÁREA ADMINISTRATIVA</p>
       <h2>Digite a senha</h2>
       <input id="adminPassword" type="password" placeholder="Senha">
-      <button id="adminSubmit" class="button primary" value="confirm">Entrar</button>
+      <button id="adminSubmit" class="button primary" type="button">Entrar</button>
       <p id="adminMessage"></p>
     </form>
   </dialog>
