@@ -1,20 +1,78 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MV MODS — Seu catálogo gamer</title>
-<meta name="description" content="Encontre jogos, skins e conteúdos no catálogo MV MODS.">
-<meta name="theme-color" content="#07070f">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MV Upload — Compartilhe arquivos</title>
+  <meta name="theme-color" content="#09090f">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="app"></div>
-<div id="toast"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="app.js"></script>
+  <header>
+    <a class="brand" href="#/"><span>MV</span> UPLOAD</a>
+    <button id="adminButton" class="button small">⚙ ADM</button>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="glow"></div>
+      <p class="eyebrow">ARMAZENAMENTO RÁPIDO</p>
+      <h1>Envie. <span>Compartilhe.</span></h1>
+      <p class="subtitle">Selecione um arquivo e receba um link permanente.</p>
+
+      <div id="uploadArea" class="upload-area">
+        <input id="fileInput" type="file">
+        <label for="fileInput">
+          <div class="upload-icon">⬆</div>
+          <strong>Escolher arquivo</strong>
+          <small>Sem limite definido pelo site</small>
+        </label>
+      </div>
+
+      <button id="uploadButton" class="button primary" disabled>Enviar arquivo</button>
+
+      <div id="progressWrap" class="progress-wrap" hidden>
+        <div class="progress"><div id="progressBar"></div></div>
+        <span id="progressText">0%</span>
+      </div>
+
+      <div id="result" class="result" hidden>
+        <p>Arquivo enviado com sucesso</p>
+        <div class="link-row">
+          <input id="linkOutput" readonly>
+          <button id="copyButton" class="button primary">Copiar</button>
+        </div>
+        <a id="openButton" class="button" target="_blank" rel="noopener">Abrir arquivo</a>
+      </div>
+    </section>
+
+    <section class="info-grid">
+      <article><b>♾️</b><h2>Sem expiração</h2><p>Os links continuam disponíveis.</p></article>
+      <article><b>🔗</b><h2>Link direto</h2><p>Copie e envie para qualquer pessoa.</p></article>
+      <article><b>⚡</b><h2>Banco de dados</h2><p>Os dados dos arquivos ficam registrados.</p></article>
+    </section>
+
+    <section id="filesSection" class="files-section" hidden>
+      <h2>Arquivos enviados</h2>
+      <div id="filesList" class="files-list"></div>
+    </section>
+  </main>
+
+  <footer>MV UPLOAD © <span id="year"></span></footer>
+  <div id="toast"></div>
+
+  <dialog id="adminDialog">
+    <form method="dialog">
+      <button class="close" value="cancel">×</button>
+      <p class="eyebrow">ÁREA ADMINISTRATIVA</p>
+      <h2>Digite a senha</h2>
+      <input id="adminPassword" type="password" placeholder="Senha">
+      <button id="adminSubmit" class="button primary" value="confirm">Entrar</button>
+      <p id="adminMessage"></p>
+    </form>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
