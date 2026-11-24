@@ -1,13 +1,14 @@
--- Configuração do armazenamento público e do banco do MV Upload.
 -- Execute no SQL Editor do Supabase uma única vez.
+-- Cria o armazenamento público e o registro dos arquivos.
 
-insert into storage.buckets (id, name, public, file_size_limit)
-values ('uploads', 'uploads', true, null)
-  on conflict (id) do update set public = true, file_size_limit = null;
+insert into storage.buckets (id, name, public)
+values ('uploads', 'uploads', true)
+on conflict (id) do update set public = true;
 
 drop policy if exists "MV upload public read" on storage.objects;
 drop policy if exists "MV upload public insert" on storage.objects;
 
+after_policy_placeholder:
 create policy "MV upload public read"
   on storage.objects for select
   to anon, authenticated
@@ -43,4 +44,5 @@ create policy "MV upload public metadata insert"
   to anon, authenticated
   with check (true);
 
+grant usage on schema public to anon, authenticated;
 grant select, insert on public.upload_files to anon, authenticated;

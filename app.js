@@ -18,6 +18,10 @@ function toast(message) {
   $("#toast").appendChild(el); setTimeout(() => el.remove(), 3500);
 }
 
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[char]));
+}
+
 function formatSize(bytes) {
   if (!bytes) return "0 B";
   const units = ["B", "KB", "MB", "GB", "TB"];
@@ -36,6 +40,7 @@ input.addEventListener("change", () => {
   event.preventDefault(); uploadArea.classList.add("drag");
 }));
 ["dragleave", "drop"].forEach((name) => uploadArea.addEventListener(name, (event) => {
+  event.preventEffect && event.preventEffect();
   event.preventDefault(); uploadArea.classList.remove("drag");
 }));
 uploadArea.addEventListener("drop", (event) => {
@@ -53,19 +58,25 @@ $("#adminButton").addEventListener("click", () => {
   $("#adminPassword").focus();
 });
 
-$("#adminSubmit").addEventListener("click", (event) => {
+$("#adminPassword").addEventListener("keydown", (event) => {
+  if (event.key === "Enter") { event.preventDefault(); $("#adminSubmit").click(); }
+});
+
+$("#adminSubmit").addEventListener("click", async (event) => {
   event.preventDefault();
   if ($("#adminPassword").value === ADMIN_PASSWORD) {
-    isAdmin = true; dialog.close();
+    isAdmin = true;
+    dialog.close();
     toast("Modo administrativo ativado");
+    await loadFiles();
   } else {
     $("#adminMessage").textContent = "Senha incorreta";
   }
 });
 
 function safeName(name) {
-  return name.normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-    .replace(/[^a-zA-Z0-9._-]/g,"-").replace(/-+/g,"-");
+  return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]/g, "-").replace(/-+/g, "-").slice(0, 120) || "arquivo";
 }
 
 async function loadFiles() {
@@ -75,24 +86,37 @@ async function loadFiles() {
     .select("id,name,size,type,url,created_at")
     .order("created_at", { ascending: false });
 
-  if (error) return;
   $("#filesSection").hidden = false;
+  if (error) {
+    $("#filesList").innerHTML = '<p class="subtitle">Banco ainda não configurado. Execute banco.sql no Supabase.</p>';
+    return;
+  }
 
   $("#filesList").innerHTML = (data || []).map((file) => `
     <div class="file-row">
       <div class="file-info">
-        <strong>${file.name}</strong>
+        <strong>${esc(file.name)}</strong>
         <small>${formatSize(file.size)} · ${new Date(file.created_at).toLocaleString("pt-BR")}</small>
       </div>
-      <a class="button small" href="${file.url}" target="_blank" rel="noopener">Abrir</a>
-      <button class="button small" onclick="copySavedLink('${file.url}')">Copiar</button>
+      <a class="button small" href="${esc(file.url)}" target="_blank" rel="noopener">Abrir</a>
+      <button class="button small" data-copy-url="${esc(file.url)}">Copiar</button>
     </div>
   `).join("") || '<p class="subtitle">Nenhum arquivo enviado.</p>';
+
+  $("#filesList").querySelectorAll("[data-copy-url]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      await copyText(button.dataset.copyUrl);
+      toast("Link copiado");
+    });
+  });
 }
 
-async function copySavedLink(url) {
-  await navigator.clipboard.writeText(url);
-  toast("Link copiado");
+async function copyText(text) {
+  if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
+  else {
+    const area = document.createElement("textarea"); area.value = text;
+    document.body.appendChild(area); area.select(); document.execCommand("copy"); area.remove();
+  }
 }
 
 uploadButton.addEventListener("click", async () => {
@@ -107,10 +131,10 @@ uploadButton.addEventListener("click", async () => {
   uploadButton.disabled = true;
   $("#progressWrap").hidden = false;
   $("#progressBar").style.width = "8%";
-  $("#progressText").textContent = "8%";
+  $("#progressText").textContent = "Preparando...";
 
   const id = crypto.randomUUID();
-  const path = `${id}/${safeName(selectedFile.name) || "arquivo"}`;
+  const path = `${id}/${safeName(selectedFile.name)}`;
 
   const { error } = await sb.storage.from("uploads").upload(path, selectedFile, {
     cacheControl: "31536000",
@@ -121,7 +145,10 @@ uploadButton.addEventListener("click", async () => {
   if (error) {
     $("#progressWrap").hidden = true;
     uploadButton.disabled = false;
-    toast("Falha no envio: " + error.message);
+    let message = error.message;
+    if (/bucket.*not found|not found/i.test(message)) message = "Bucket uploads não encontrado. Execute banco.sql no Supabase.";
+    if (/row-level security|not authorized|policy/i.test(message)) message = "Permissão negada. Execute banco.sql no Supabase.";
+    toast("Falha no envio: " + message);
     return;
   }
 
@@ -142,7 +169,7 @@ uploadButton.addEventListener("click", async () => {
   $("#openButton").href = url;
   $("#result").hidden = false;
 
-  if (databaseError) toast("Arquivo enviado, mas não pôde ser registrado no banco: " + databaseError.message);
+  if (databaseError) toast("Arquivo enviado, mas o banco não foi configurado: " + databaseError.message);
   else toast("Arquivo enviado e registrado no banco");
 
   await loadFiles();
@@ -151,7 +178,7 @@ uploadButton.addEventListener("click", async () => {
 });
 
 $("#copyButton").addEventListener("click", async () => {
-  await navigator.clipboard.writeText($("#linkOutput").value);
+  await copyText($("#linkOutput").value);
   $("#copyButton").textContent = "Copiado!";
   setTimeout(() => $("#copyButton").textContent = "Copiar", 1800);
 });
