@@ -1,0 +1,24 @@
+MV MODS — site simples (5 arquivos)
+
+  index.html  -> a página
+  style.css   -> o visual
+  app.js      -> todo o funcionamento (catálogo, login, painel ADM)
+  banco.sql   -> o banco de dados (cole no Supabase, uma vez)
+  LEIA-ME.txt -> este arquivo
+
+COMO COLOCAR PARA FUNCIONAR
+1) Banco: Supabase > SQL Editor > New query > cole o conteudo de banco.sql > Run.
+   (pode rodar de novo sem problema)
+2) SEM VERIFICAR E-MAIL: alem do banco.sql, desligue no Supabase:
+   Authentication > Sign In / Providers > Email > "Confirm email" = DESLIGADO > Save.
+   (assim o cadastro entra direto e nao gasta o limite de e-mails)
+3) PAINEL ADM: entre na sua conta > toque no seu nome (Perfil) > botao "ADM" >
+   digite a senha. A senha fica guardada no banco (criptografada), nao no site.
+   Senha inicial: 360  (TROQUE: veja o comentario no fim do banco.sql).
+   Qualquer conta que acertar a senha vira ADM; o botao "Sair do ADM" (dentro do
+   painel) tira a permissao da conta. Depois de 10 erros seguidos o botao trava 1 hora.
+   Ninguem nasce ADM por e-mail.
+4) Site: suba SO index.html, style.css e app.js no GitHub Pages (ou Netlify).
+   NAO suba o banco.sql (a senha esta nele).
+5) Opcional: Authentication > URL Configuration > Site URL = endereco do seu site
+   (so para o e-mail de "Esqueci minha senha").
